@@ -1,11 +1,11 @@
 import lib
 import random
 
-new_blood = 4
-mutation_chance = 0.01
-generation_size = 20
-max_generations = 1000
-tournament_size = 10
+mutation_chance = 0.001
+generation_size = random.randint(4, 10)*10
+new_blood = random.randint(2, int(generation_size/6))*2
+max_generations = random.randint(4, 10)*100
+tournament_size = random.randint(2, int(generation_size/4))
 choosing_method = random.choice(["turnaj", "ruleta"])
 playing_field_size = 7
 treasure_locations = [(1, 4), (2, 2), (3, 6), (4, 1), (5, 4)]
@@ -16,7 +16,7 @@ playing_field = lib.reset_playing_field(playing_field_size, treasure_locations, 
 
 switch = input("Ak chcete manualne nastavit parametre zadajte 'm', ak chcete automaticky test, zadajte hocico ine ")
 if switch == 'm':
-    generation_size = int(input("Zadajte velkost generacie "))
+    generation_size = int(input("Zadajte pocet ludi v jednej generacii "))
     new_blood = int(input("Zadajte pocet novej krvi v kazdej novej generacii "))
     mutation_chance = float(input("Zadajte pravdepodobnost mutacie "))
     max_generations = int(input("Zadajte maximalny pocet generacii  "))
@@ -29,19 +29,22 @@ if switch == 'm':
 
 program_counter = 0
 opakovania = 0
+path = ""
+switch2 = ''
 while not lib.solution(generation, program_counter, int(max_generations), opakovania):
     if len(generation) == 0:
         for i in range(generation_size):
             dna = lib.create_dna()
-            generation.append((dna, lib.fitness(dna, playing_field_size, playing_field)))
+            path = lib.virtual_machine(dna)
+            generation.append((dna, lib.game(path, playing_field_size, playing_field)))
             playing_field = lib.reset_playing_field(playing_field_size, treasure_locations, player_location)
-            program_counter += 1
+        program_counter += 1
         continue
     if program_counter > int(max_generations):
-        switch = input("Nenasiel sa sampion. Chcete pokracovat? y/n ")
-        if switch == 'n':
-            exit(0)
-        elif switch == 'y':
+        switch2 = input("Nenasiel sa sampion. Chcete pokracovat? y/n ")
+        if switch2 == 'n':
+            break
+        elif switch2 == 'y':
             opakovania += 1
             program_counter = 0
             continue
@@ -69,8 +72,23 @@ while not lib.solution(generation, program_counter, int(max_generations), opakov
         new_generation.append(dna)
     for m in range(len(new_generation)):
         lib.mutate(new_generation[m], mutation_chance)
-        new_generation[m] = (new_generation[m], lib.fitness(new_generation[m], playing_field_size, playing_field))
+        path = lib.virtual_machine(new_generation[m])
+        new_generation[m] = (new_generation[m], lib.game(path, playing_field_size, playing_field))
         playing_field = lib.reset_playing_field(playing_field_size, treasure_locations, player_location)
     generation = new_generation
     new_generation = []
     program_counter += 1
+
+if switch != 'm':
+    print("Velkost generacie: " + str(generation_size))
+    print("Pocet novej krvi: " + str(new_blood))
+    print("Pravdepodobnost mutacie: " + str(mutation_chance))
+    print("Maximalny pocet generacii: " + str(max_generations))
+    print("Metoda vyberania rodicov: " + choosing_method)
+    if choosing_method == "turnaj" or choosing_method == "2":
+        print("Velkost turnaja: " + str(tournament_size))
+
+# dna = lib.create_dna()
+# path = lib.virtual_machine(dna)
+# print(path)
+# print(lib.game(path, playing_field_size, playing_field))
