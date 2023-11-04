@@ -1,134 +1,76 @@
+import lib
+import random
+
+new_blood = 4
 mutation_chance = 0.01
 generation_size = 20
+max_generations = 1000
+tournament_size = 10
+choosing_method = random.choice(["turnaj", "ruleta"])
 playing_field_size = 7
 treasure_locations = [(1, 4), (2, 2), (3, 6), (4, 1), (5, 4)]
 player_location = [(6, 3)]
+generation = []
+new_generation = []
+playing_field = lib.reset_playing_field(playing_field_size, treasure_locations, player_location)
 
+switch = input("Ak chcete manualne nastavit parametre zadajte 'm', ak chcete automaticky test, zadajte hocico ine ")
+if switch == 'm':
+    generation_size = int(input("Zadajte velkost generacie "))
+    new_blood = int(input("Zadajte pocet novej krvi v kazdej novej generacii "))
+    mutation_chance = float(input("Zadajte pravdepodobnost mutacie "))
+    max_generations = int(input("Zadajte maximalny pocet generacii  "))
+    choosing_method = input("Zadajte metodu vyberania rodicov: ruleta / turnaj  ")
+    if choosing_method != "ruleta" and choosing_method != "turnaj" and choosing_method != "1" and choosing_method != "2":
+        print("Zly vstup")
+        exit(0)
+    if choosing_method == "turnaj" or choosing_method == "2":
+        tournament_size = int(input("Zadajte velkost turnaja "))
 
-playing_field = [[' ' for _ in range(playing_field_size)] for _ in range(playing_field_size)]
-for location in treasure_locations:
-    playing_field[location[0]][location[1]] = 't'
-playing_field[player_location[0][0]][player_location[0][1]] = 'p'
-
-
-def generate_dna(count):
-    import random
-    generation = []
-    for i in range(count):
-        dna = ""
-        for j in range(8):
-            dna += random.choice("10")
-        generation.append(dna)
-    return generation
-
-
-def mutate(dna):
-    mutated_dna = []
-    import random
-    for gene in dna:
-        mutated_gene = gene
-        for index in range(len(gene)):
-            mutated_bit = ""
-            if random.random() < mutation_chance:
-                if gene[index] == "0":
-                    mutated_bit = "1"
-                elif gene[index] == "1":
-                    mutated_bit = "0"
-            else:
-                mutated_bit = gene[index]
-            mutated_gene = mutated_gene[:index] + mutated_bit + mutated_gene[index + 1:]
-        mutated_dna.append(mutated_gene)
-    return mutated_dna
-
-
-def find_player():
-    for i in range(playing_field_size):
-        for j in range(playing_field_size):
-            if playing_field[i][j] == 'p':
-                return i, j
-
-
-def print_field():
-    for i in range(playing_field_size):
-        print(playing_field[i])
-
-
-def pohyb(dna):
-    binary_suffix = dna[6:]
-    suradnice = find_player()
-    if binary_suffix == "00":
-        if suradnice[0] == 0:
-            playing_field[playing_field_size-1][suradnice[1]] = 'p'
-            playing_field[suradnice[0]][suradnice[1]] = ' '
+program_counter = 0
+opakovania = 0
+while not lib.solution(generation, program_counter, int(max_generations), opakovania):
+    if len(generation) == 0:
+        for i in range(generation_size):
+            dna = lib.create_dna()
+            generation.append((dna, lib.fitness(dna, playing_field_size, playing_field)))
+            playing_field = lib.reset_playing_field(playing_field_size, treasure_locations, player_location)
+            program_counter += 1
+        continue
+    if program_counter > int(max_generations):
+        switch = input("Nenasiel sa sampion. Chcete pokracovat? y/n ")
+        if switch == 'n':
+            exit(0)
+        elif switch == 'y':
+            opakovania += 1
+            program_counter = 0
+            continue
         else:
-            playing_field[suradnice[0]-1][suradnice[1]] = 'p'
-            playing_field[suradnice[0]][suradnice[1]] = ' '
-        print("hore")
-    elif binary_suffix == "01":
-        if suradnice[0] == playing_field_size-1:
-            playing_field[0][suradnice[1]] = 'p'
-            playing_field[suradnice[0]][suradnice[1]] = ' '
-        else:
-            playing_field[suradnice[0]+1][suradnice[1]] = 'p'
-            playing_field[suradnice[0]][suradnice[1]] = ' '
-        print("dole")
-    elif binary_suffix == "10":
-        if suradnice[1] == 0:
-            playing_field[suradnice[0]][playing_field_size-1] = 'p'
-            playing_field[suradnice[0]][suradnice[1]] = ' '
-        else:
-            playing_field[suradnice[0]][suradnice[1]-1] = 'p'
-            playing_field[suradnice[0]][suradnice[1]] = ' '
-        print("dolava")
-    elif binary_suffix == "11":
-        if suradnice[1] == playing_field_size-1:
-            playing_field[suradnice[0]][0] = 'p'
-            playing_field[suradnice[0]][suradnice[1]] = ' '
-        else:
-            playing_field[suradnice[0]][suradnice[1]+1] = 'p'
-            playing_field[suradnice[0]][suradnice[1]] = ' '
-        print("doprava")
-    print_field()
-
-
-def fitness(dna):
-    index = 0
-    counter = 0
-    vypis = 0
-    while index < len(dna) and counter < 500:
-        binary_prefix = dna[index][:2]
-        if binary_prefix in ("00", "01"):
-            binary_address = dna[index][2:]
-            decimal_address = int(binary_address, 2)
-            binary_suffix = dna[index][6:]
-            if binary_prefix == "00":
-                temp = int(dna[decimal_address], 2)
-                if temp == 255:
-                    dna[decimal_address] = bin(0)[2:].zfill(8)
-                else:
-                    dna[decimal_address] = bin(temp + 1)[2:].zfill(8)
-                index += 1
-            elif binary_prefix == "01":
-                temp = int(dna[decimal_address], 2)
-                if temp == 0:
-                    dna[decimal_address] = bin(255)[2:].zfill(8)
-                else:
-                    dna[decimal_address] = bin(temp - 1)[2:].zfill(8)
-                index += 1
-        elif binary_prefix == "10":
-            index = int(dna[index][2:], 2)
-        elif binary_prefix == "11":
-            #pohyb(dna[index])
-            vypis += 1
-            index += 1
-        counter += 1
-
-
-def create_generation():
-    generation = []
-    for i in range(generation_size):
-        generation.append(generate_dna(64))
-    return generation
-
-
-fitness(create_generation()[0])
+            print("Zly vstup")
+            exit(0)
+    generation_range = (generation_size - new_blood) / 2
+    for j in range(int(generation_range)):
+        if choosing_method == "ruleta" or choosing_method == "1":
+            parent1 = lib.roulette(generation)
+            parent2 = lib.roulette(generation)
+            while parent2 == parent1:
+                parent2 = lib.roulette(generation)
+            new_generation.append(lib.order_cross(parent1[0], parent2[0]))
+            new_generation.append(lib.order_cross(parent2[0], parent1[0]))
+        elif choosing_method == "turnaj" or choosing_method == "2":
+            parent1 = lib.tournament(generation, tournament_size)
+            parent2 = lib.tournament(generation, tournament_size)
+            while parent2 == parent1:
+                parent2 = lib.tournament(generation, tournament_size)
+            new_generation.append(lib.order_cross(parent1[0], parent2[0]))
+            new_generation.append(lib.order_cross(parent2[0], parent1[0]))
+    for k in range(new_blood):
+        dna = lib.create_dna()
+        new_generation.append(dna)
+    for m in range(len(new_generation)):
+        lib.mutate(new_generation[m], mutation_chance)
+        new_generation[m] = (new_generation[m], lib.fitness(new_generation[m], playing_field_size, playing_field))
+        playing_field = lib.reset_playing_field(playing_field_size, treasure_locations, player_location)
+    generation = new_generation
+    new_generation = []
+    program_counter += 1
