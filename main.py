@@ -2,8 +2,8 @@ import lib
 import random
 
 mutation_chance = 0.001
-generation_size = random.randint(4, 10)*10
-new_blood = random.randint(2, int(generation_size/6))*2
+generation_size = 50
+new_blood = 40
 max_generations = random.randint(4, 10)*100
 tournament_size = random.randint(2, int(generation_size/4))
 choosing_method = random.choice(["turnaj", "ruleta"])
@@ -51,22 +51,21 @@ while not lib.solution(generation, program_counter, int(max_generations), opakov
         else:
             print("Zly vstup")
             exit(0)
-    generation_range = (generation_size - new_blood) / 2
-    for j in range(int(generation_range)):
-        if choosing_method == "ruleta" or choosing_method == "1":
-            parent1 = lib.roulette(generation)
+    parent1 = ()
+    parent2 = ()
+    if choosing_method == "ruleta" or choosing_method == "1":
+        parent1 = lib.roulette(generation)
+        parent2 = lib.roulette(generation)
+        while parent2 == parent1:
             parent2 = lib.roulette(generation)
-            while parent2 == parent1:
-                parent2 = lib.roulette(generation)
-            new_generation.append(lib.order_cross(parent1[0], parent2[0]))
-            new_generation.append(lib.order_cross(parent2[0], parent1[0]))
-        elif choosing_method == "turnaj" or choosing_method == "2":
-            parent1 = lib.tournament(generation, tournament_size)
+    elif choosing_method == "turnaj" or choosing_method == "2":
+        parent1 = lib.tournament(generation, tournament_size)
+        parent2 = lib.tournament(generation, tournament_size)
+        while parent2 == parent1:
             parent2 = lib.tournament(generation, tournament_size)
-            while parent2 == parent1:
-                parent2 = lib.tournament(generation, tournament_size)
-            new_generation.append(lib.order_cross(parent1[0], parent2[0]))
-            new_generation.append(lib.order_cross(parent2[0], parent1[0]))
+    while len(new_generation) < generation_size - new_blood:
+        new_generation.append(lib.order_cross(parent1[0], parent2[0]))
+        new_generation.append(lib.order_cross(parent2[0], parent1[0]))
     for k in range(new_blood):
         dna = lib.create_dna()
         new_generation.append(dna)
@@ -75,7 +74,11 @@ while not lib.solution(generation, program_counter, int(max_generations), opakov
         path = lib.virtual_machine(new_generation[m])
         new_generation[m] = (new_generation[m], lib.game(path, playing_field_size, playing_field))
         playing_field = lib.reset_playing_field(playing_field_size, treasure_locations, player_location)
-    generation = new_generation
+    all_individuals = generation + new_generation
+    all_individuals = sorted(all_individuals, key=lambda x: x[1][0], reverse=True)
+    generation = []
+    for index in range(50):
+        generation.append(all_individuals[index])
     new_generation = []
     program_counter += 1
 
@@ -88,7 +91,4 @@ if switch != 'm':
     if choosing_method == "turnaj" or choosing_method == "2":
         print("Velkost turnaja: " + str(tournament_size))
 
-# dna = lib.create_dna()
-# path = lib.virtual_machine(dna)
-# print(path)
-# print(lib.game(path, playing_field_size, playing_field))
+

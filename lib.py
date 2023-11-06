@@ -32,8 +32,8 @@ def mutate(dna, mutation_chance):
 
 def order_cross(parent1, parent2):
     import random
-    index1 = random.randint(1, 15)
-    index2 = random.randint(45, 63)
+    index1 = random.randint(0, 63)
+    index2 = random.randint(45, 60)
     child = parent2[:index1] + parent1[index1:index2] + parent2[index2:]
     return child
 
